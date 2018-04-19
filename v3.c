@@ -285,7 +285,7 @@ set_huge_to_str(huge_t *huge, char *opr2_str, int *length){
 *   source: pointer of huge_t array to be added to target
 *   source_len: length of source array
 *   
-*   TODO: n0=999, n0^n0 = incorrect value
+*   TODO: n0=999, n0^n0 = incorrect value FIXED
 */
 void
 add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
@@ -447,7 +447,6 @@ void mult_huge(huge_t *target, int *target_len, huge_t *source,
 *	target_len: pointer to length of huge_t 
 *   exp: pointer of huge_t array to be added to target
 *   exp_len: length of source array
-*   
 */
 
 void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
@@ -456,21 +455,25 @@ void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
 	int huge_i_len=0;
 	set_huge_to_zero(&huge_i, &huge_i_len);
 	
-	/*increases by one because x^2 requires 1 multiplication not 2*/
-	inc_huge(&huge_i, &huge_i_len);	
-
-
 	/*initialises copy of target to repeatedly multiply to target*/
 	huge_t base;
 	int base_len = *target_len; 
 	copy_huge(&base, &base_len, target, *target_len);	
 
-	/*repeatedly multiplies target by base until huges equal evals to true*/
-	while(!(huges_equal(&huge_i, huge_i_len, exp, exp_len))){
-		mult_huge(target, target_len, &base, base_len);
+	/*initialises result huge_t to store result and sets to 1*/
+	huge_t result;
+	int result_len;
+	set_huge_to_zero(&result, &result_len);
+	inc_huge(&result, &result_len);
 
+	/*repeatedly multiplies result by target until huges_equal evals to true*/
+	while(!(huges_equal(&huge_i, huge_i_len, exp, exp_len))){
+		mult_huge(&result, &result_len, target, *target_len);
+		printf("wow");
 		inc_huge(&huge_i, &huge_i_len);
 	}
+
+	copy_huge(target, target_len, &result, result_len);	
 }
 
 
