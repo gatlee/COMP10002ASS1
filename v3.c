@@ -5,7 +5,7 @@
  * Rest of code written by Gatlee Kaw(994017), April 2018
  * Last modified: 18/04/18
  *
- *TODO: fix [0] indexing for n 
+ *
  *fix ){ --> ) { formatting
  */
 
@@ -38,7 +38,6 @@ typedef int digit_t;				/* a decimal digit */
 typedef digit_t huge_t[INT_SIZE];	/* one huge int "variable" */
 
 /* add your constant and type definitions here */
-#define N_OP		'n'
 /****************************************************************/
 
 /* function prototypes */
@@ -52,7 +51,7 @@ void power(huge_t vars[], int lens[], int opr1_index, char *opr2_str);
 
 /* add your function prototypes here */
 void set_huge_to_zero(huge_t *target, int *target_len);
-void set_huge_to_str(huge_t *huge, char *opr2_str, int *length);
+void set_huge_from_str(huge_t *huge, char *opr2_str, int *length);
 void add_int_to_digit(huge_t *target, int *target_len, int target_index,
                       int value);
 void add_huges(huge_t *target, int *target_len, huge_t *source, int source_len);
@@ -62,6 +61,9 @@ void mult_huge(huge_t *target, int *target_len, huge_t *source, int source_len);
 void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len);
 int huges_equal(huge_t *a, int a_len, huge_t *b, int b_len);
 void inc_huge(huge_t *target, int *target_len);
+
+int get_opr2_index(char *opr2_str);
+int is_var(char *opr2_str);
 /****************************************************************/
 /* main function controls all the action, do NOT modify this function */
 int
@@ -150,7 +152,7 @@ void echo(huge_t vars[], int lens[], int opr1_index) {
 void
 init(huge_t vars[], int lens[]) {
 	int i;
-	for(i=0; i<NUM_VARS; i++){
+	for(i=0; i<NUM_VARS; i++) {
 		set_huge_to_zero(&vars[i], &lens[i]);
 	}
 }
@@ -158,24 +160,28 @@ init(huge_t vars[], int lens[]) {
 /* process the '=' operator */
 void
 assign(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
-	if (opr2_str[0] == N_OP){
-		int opr2_index = opr2_str[1] - CH_ZERO;
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
+		
+		
 		set_huge_to_zero(&vars[opr1_index], &lens[opr1_index]);
 		
 		add_huges(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
 		          lens[opr2_index]);
 	}
 	else{
-		set_huge_to_str(&vars[opr1_index], opr2_str, &lens[opr1_index]);
+		set_huge_from_str(&vars[opr1_index], opr2_str, &lens[opr1_index]);
 	}
 
 }
+
 	
 /* process the '+' operator */
 void 
 add(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
-	if (opr2_str[0] == N_OP){
-		int opr2_index = opr2_str[1] - CH_ZERO;
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
+
 		
 		add_huges(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
 		          lens[opr2_index]);
@@ -183,7 +189,7 @@ add(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 	else{
 		huge_t to_add;
 		int huge_len; 
-		set_huge_to_str(&to_add, opr2_str, &huge_len);
+		set_huge_from_str(&to_add, opr2_str, &huge_len);
 		
 		add_huges(&vars[opr1_index], &lens[opr1_index], &to_add,
 		          huge_len);
@@ -194,8 +200,8 @@ add(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 /* process the '*' operator */
 void 
 multiply(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
-	if (opr2_str[0] == N_OP){
-		int opr2_index = opr2_str[1] - CH_ZERO;
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
 			
 		mult_huge(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
 		          lens[opr2_index]);
@@ -205,7 +211,7 @@ multiply(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 	else{
 		huge_t to_add;
 		int huge_len; 
-		set_huge_to_str(&to_add, opr2_str, &huge_len);
+		set_huge_from_str(&to_add, opr2_str, &huge_len);
 		
 		mult_huge(&vars[opr1_index], &lens[opr1_index], &to_add,
 		          huge_len);
@@ -218,18 +224,17 @@ multiply(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 /* process the '^' operator */
 void 
 power(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
-	if (opr2_str[0] == N_OP){
-		int opr2_index = opr2_str[1] - CH_ZERO;
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
 			
 		power_huge(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
 		          lens[opr2_index]);
 
-	
 	}
 	else{
 		huge_t exp;
 		int exp_len; 
-		set_huge_to_str(&exp, opr2_str, &exp_len);
+		set_huge_from_str(&exp, opr2_str, &exp_len);
 		
 		power_huge(&vars[opr1_index], &lens[opr1_index], &exp, exp_len);
 	}
@@ -244,14 +249,14 @@ power(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 *   target: pointer of huge_t array
 *   target_len: pointer to length of target
 */
-void set_huge_to_zero(huge_t *target, int *target_len){
+void set_huge_to_zero(huge_t *target, int *target_len) {
 	*target_len = 1;
 		
 	(*target)[0]=0;
 }
 
 /*
-*Function: set_huge_to_str
+*Function: set_huge_from_str
 *-------------------------
 *set huge to given str
 *
@@ -259,10 +264,10 @@ void set_huge_to_zero(huge_t *target, int *target_len){
 *   opr2_str: user input string for characters proceeding and including first
 *   operator
 *	length: pointer to length of huge_t 
-*   TODO: change name
+*
 */
 void
-set_huge_to_str(huge_t *huge, char *opr2_str, int *length){
+set_huge_from_str(huge_t *huge, char *opr2_str, int *length) {
 	int i=0;
 	while (opr2_str[i] !=0) {
 		i++;
@@ -275,17 +280,40 @@ set_huge_to_str(huge_t *huge, char *opr2_str, int *length){
 	
 }
 /*
+*Function: get_opr2_index
+*gives number of the 2nd variable referred to by user
+*
+*   opr2_str: user input char string after operator
+*/
+int
+get_opr2_index(char *opr2_str) {
+	int result = opr2_str[1] - CH_ZERO;  
+
+	return result;
+
+}
+
+/*
+*Function: is_var
+*checks if first character after operator is an 'n' and returns true if it is
+*/
+int 
+is_var(char *opr2_str) {
+	return opr2_str[0] == 'n';
+
+}
+/*
 *Function: add_huges
 *-------------------
-*adds huges together using repeated calls of add_int_to_digit for each
-*digit of the corresponding target and source digits
+*sets target huge to huge+source
+*
 *
 *   target: pointer of huge_t array
 *	target_len: pointer to length of huge_t 
 *   source: pointer of huge_t array to be added to target
 *   source_len: length of source array
 *   
-*   TODO: n0=999, n0^n0 = incorrect value FIXED
+*   
 */
 void
 add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
@@ -294,7 +322,7 @@ add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
 	int source_cp_len = source_len; 
 	copy_huge(&source_cp, &source_cp_len, source, source_len);
 
-	for(i = 0; i<source_len; i++){
+	for(i = 0; i<source_len; i++) {
 		add_int_to_digit(target, target_len, i, source_cp[i]);
 	}
 	trim_zeros(target, target_len);
@@ -314,18 +342,18 @@ add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
 */
 
 void
-add_int_to_digit(huge_t *target, int *target_len, int target_index, int value){
-	if (target_index >= INT_SIZE){
+add_int_to_digit(huge_t *target, int *target_len, int target_index, int value) {
+	if (target_index >= INT_SIZE) {
 		return;
 	}
 	
 	/*expands length if required. sets new digit to 0*/
-	if (*target_len <= target_index){
+	if (*target_len <= target_index) {
 		*target_len += 1;
 		(*target)[target_index] = 0; 	
 	}
 
-	if (value == 0){
+	if (value == 0) {
 		return;
 	}
 	
@@ -347,9 +375,9 @@ add_int_to_digit(huge_t *target, int *target_len, int target_index, int value){
 *   target: pointer of huge_t array
 *	target_len: pointer to length of huge_t 
 */
-void trim_zeros(huge_t *target, int *target_len){
+void trim_zeros(huge_t *target, int *target_len) {
 	int i =(*target_len)-1;
-	while ((*target)[i] == 0 && i > 0){
+	while ((*target)[i] == 0 && i > 0) {
 		i--;
 	}
 	(*target_len) = i + 1;
@@ -401,7 +429,7 @@ void copy_huge(huge_t *target, int *target_len, huge_t *source,
 	(*target_len) = source_len;
 
 	int i;
-	for (i=0;i<source_len;i++){
+	for (i=0;i<source_len;i++) {
 		(*target)[i] = (*source)[i];
 	}
 }
@@ -419,22 +447,22 @@ void copy_huge(huge_t *target, int *target_len, huge_t *source,
 */
 void mult_huge(huge_t *target, int *target_len, huge_t *source, 
                int source_len) {
-
-	huge_t total;
-	int total_len=0;
-	set_huge_to_zero(&total, &total_len);
+	/*initialises huge to store result and sets it to 0*/
+	huge_t result;
+	int result_len=0;
+	set_huge_to_zero(&result, &result_len);
 	
 	/*uses school multiplication algorithm*/
 	int i, j;
-	for (i=0; i<*target_len;i++){
-		for (j=0; j<source_len;j++){
+	for (i=0; i<*target_len;i++) {
+		for (j=0; j<source_len;j++) {
 			
 			int product = (*target)[i] * (*source)[j];
-			add_int_to_digit(&total, &total_len, i+j, product);
+			add_int_to_digit(&result, &result_len, i+j, product);
 		}
 	}
 	/*finally assigns target value and removes leading zeros*/	
-	copy_huge(target, target_len, &total, total_len);
+	copy_huge(target, target_len, &result, result_len);
 	trim_zeros(target, target_len);
 }
 
@@ -455,11 +483,6 @@ void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
 	int huge_i_len=0;
 	set_huge_to_zero(&huge_i, &huge_i_len);
 	
-	/*initialises copy of target to repeatedly multiply to target*/
-	huge_t base;
-	int base_len = *target_len; 
-	copy_huge(&base, &base_len, target, *target_len);	
-
 	/*initialises result huge_t to store result and sets to 1*/
 	huge_t result;
 	int result_len;
@@ -467,27 +490,28 @@ void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
 	inc_huge(&result, &result_len);
 
 	/*repeatedly multiplies result by target until huges_equal evals to true*/
-	while(!(huges_equal(&huge_i, huge_i_len, exp, exp_len))){
+	while(!(huges_equal(&huge_i, huge_i_len, exp, exp_len))) {
 		mult_huge(&result, &result_len, target, *target_len);
 		printf("wow");
 		inc_huge(&huge_i, &huge_i_len);
 	}
-
+	
+	
 	copy_huge(target, target_len, &result, result_len);	
+	trim_zeros(target, target_len);
 }
-
 
 /*
 *Function: inc_huge
 *-------------------
-*adds 1 to huge
+*adds 1 to huge 
 *
 *   target: pointer of huge_t array
 *	target_len: pointer to length of huge_t 
 *   
 */
 	
-void inc_huge(huge_t *target, int *target_len){
+void inc_huge(huge_t *target, int *target_len) {
 	
 	add_int_to_digit(target, target_len, 0,1);
 	trim_zeros(target, target_len); 
