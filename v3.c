@@ -290,10 +290,12 @@ set_huge_to_str(huge_t *huge, char *opr2_str, int *length){
 void
 add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
 	int i;
-
+	huge_t source_cp;
+	int source_cp_len = source_len; 
+	copy_huge(&source_cp, &source_cp_len, source, source_len);
 
 	for(i = 0; i<source_len; i++){
-		add_int_to_digit(target, target_len, i, (*source)[i]);
+		add_int_to_digit(target, target_len, i, source_cp[i]);
 	}
 	trim_zeros(target, target_len);
 }
