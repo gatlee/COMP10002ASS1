@@ -492,7 +492,6 @@ void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
 	/*repeatedly multiplies result by target until huges_equal evals to true*/
 	while(!(huges_equal(&huge_i, huge_i_len, exp, exp_len))) {
 		mult_huge(&result, &result_len, target, *target_len);
-		printf("wow");
 		inc_huge(&huge_i, &huge_i_len);
 	}
 	
