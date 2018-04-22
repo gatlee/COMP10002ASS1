@@ -6,7 +6,7 @@
  * Last modified: 18/04/18
  *
  *
- *fix ){ --> ) { formatting
+ *
  */
 
 #include <stdio.h>
@@ -38,6 +38,8 @@ typedef int digit_t;				/* a decimal digit */
 typedef digit_t huge_t[INT_SIZE];	/* one huge int "variable" */
 
 /* add your constant and type definitions here */
+#define VAR_CHAR	'n'
+#define VAR_POS		0
 /****************************************************************/
 
 /* function prototypes */
@@ -160,10 +162,11 @@ init(huge_t vars[], int lens[]) {
 /* process the '=' operator */
 void
 assign(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
+	/*checks if input after operator is 'n' or numbers*/
 	if (is_var(opr2_str)) {
 		int opr2_index = get_opr2_index(opr2_str); 
-		
-		
+
+		/*set to zero and add desired value*/
 		set_huge_to_zero(&vars[opr1_index], &lens[opr1_index]);
 		
 		add_huges(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
@@ -180,9 +183,9 @@ assign(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 void 
 add(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 	if (is_var(opr2_str)) {
+		
 		int opr2_index = get_opr2_index(opr2_str); 
 
-		
 		add_huges(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
 		          lens[opr2_index]);
 	}
@@ -269,10 +272,11 @@ void set_huge_to_zero(huge_t *target, int *target_len) {
 void
 set_huge_from_str(huge_t *huge, char *opr2_str, int *length) {
 	int i=0;
-	while (opr2_str[i] !=0) {
+	while (opr2_str[i]) {
 		i++;
 	}
 	*length = i;
+	/*assigns huge in reverse*/
 	int j = 0;
 	for (j=(*length) - 1; j>=0; j--) {
 		(*huge)[j] = (opr2_str[((*length)-1) -j] - CH_ZERO);
@@ -299,7 +303,7 @@ get_opr2_index(char *opr2_str) {
 */
 int 
 is_var(char *opr2_str) {
-	return opr2_str[0] == 'n';
+	return opr2_str[VAR_POS] == VAR_CHAR;
 
 }
 /*
@@ -317,11 +321,13 @@ is_var(char *opr2_str) {
 */
 void
 add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
-	int i;
+	/*creates copy of source to add to target*/
 	huge_t source_cp;
 	int source_cp_len = source_len; 
 	copy_huge(&source_cp, &source_cp_len, source, source_len);
-
+	
+	/*repeatedly adds each integer one by one to target*/
+	int i;
 	for(i = 0; i<source_len; i++) {
 		add_int_to_digit(target, target_len, i, source_cp[i]);
 	}
@@ -352,7 +358,7 @@ add_int_to_digit(huge_t *target, int *target_len, int target_index, int value) {
 		*target_len += 1;
 		(*target)[target_index] = 0; 	
 	}
-
+	/*no point doing anything. exit*/
 	if (value == 0) {
 		return;
 	}
@@ -469,7 +475,7 @@ void mult_huge(huge_t *target, int *target_len, huge_t *source,
 /*
 *Function: power_huge
 *-------------------
-*sets target to target^exp
+*sets target to target^exp with correct formatting
 *
 *   target: pointer of huge_t array
 *	target_len: pointer to length of huge_t 
@@ -495,7 +501,7 @@ void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
 		inc_huge(&huge_i, &huge_i_len);
 	}
 	
-	
+		
 	copy_huge(target, target_len, &result, result_len);	
 	trim_zeros(target, target_len);
 }
