@@ -1,5 +1,5 @@
 # COMP10002ASS1
-Assesment 1 of COMP10002
+Assesment 1 of COMP10002 Subject at UoM
 
 ## Notes
 The first assessment of COMP10002.
