@@ -2,6 +2,10 @@
  * Implements +, *, and ^ (power of) operations
  *
  * Skeleton code written by Jianzhong Qi, March 2018
+ * Rest of code written by Gatlee Kaw(994017), April 2018
+ * Last modified: 18/04/18
+ *
+ *
  *
  */
 
@@ -10,9 +14,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#define INT_SIZE	100/* max number of digits per integer value */ 
-#define LINE_LEN	103	/* maximum length of any input line */ 
-#define NUM_VARS	10	/* number of different huge int "variables" */ 
+#define INT_SIZE	100	/* max number of digits per integer value */
+#define LINE_LEN	103	/* maximum length of any input line */
+#define NUM_VARS	10	/* number of different huge int "variables" */
+
 #define ASN_OP		'='	/* assignment operator */
 #define ECH_OP		'?'	/* echo operator */
 #define ADD_OP		'+'	/* addition operator */
@@ -29,29 +34,40 @@
 #define PROMPT		"> "	/* command prompt */
 #define CMT_FLAG	'%'		/* indicator for comment line */
 
-typedef int digit_t;			/* a decimal digit */
+typedef int digit_t;				/* a decimal digit */
 typedef digit_t huge_t[INT_SIZE];	/* one huge int "variable" */
 
 /* add your constant and type definitions here */
+#define VAR_CHAR	'n'
+#define VAR_POS		0
+/****************************************************************/
 
-
-/****************************************************************/ 
-/* function prototypes */ 
-void read_line(char *line, int max_len); 
+/* function prototypes */
+void read_line(char *line, int max_len);
 void init(huge_t vars[], int lens[]); 
-void echo(huge_t vars[], int lens[], int opr1_index); 
-void assign(huge_t vars[], int lens[], int opr1_index, char *opr2_str); 
-void add(huge_t vars[], int lens[], int opr1_index, char *opr2_str); 
-void multiply(huge_t vars[], int lens[], int opr1_index, char *opr2_str); 
-void power(huge_t vars[], int lens[], int opr1_index, char *opr2_str); 
-/* add your function prototypes here */ 
-int get_bigger(int, int); 
-int get_opr2_len(char *opr2_str); 
-void set_huge_to_str(huge_t *huge ,char *opr2_str);
-void add_return_carry(digit_t *digit, int factor, int *carry);
-void trim_huge(huge_t huge, int len);
-/****************************************************************/ 
+void echo(huge_t vars[], int lens[], int opr1_index);
+void assign(huge_t vars[], int lens[], int opr1_index, char *opr2_str);
+void add(huge_t vars[], int lens[], int opr1_index, char *opr2_str);
+void multiply(huge_t vars[], int lens[], int opr1_index, char *opr2_str);
+void power(huge_t vars[], int lens[], int opr1_index, char *opr2_str);
 
+/* add your function prototypes here */
+void set_huge_to_zero(huge_t *target, int *target_len);
+void set_huge_from_str(huge_t *huge, char *opr2_str, int *length);
+void add_int_to_digit(huge_t *target, int *target_len, int target_index,
+                      int value);
+void add_huges(huge_t *target, int *target_len, huge_t *source, int source_len);
+void trim_zeros(huge_t *target, int *target_len);
+void copy_huge(huge_t *target, int *target_len, huge_t *source, int source_len);
+void mult_huge(huge_t *target, int *target_len, huge_t *source, int source_len);
+void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len);
+int huges_equal(huge_t *a, int a_len, huge_t *b, int b_len);
+void inc_huge(huge_t *target, int *target_len);
+
+int get_opr2_index(char *opr2_str);
+int is_var(char *opr2_str);
+/****************************************************************/
+/* main function controls all the action, do NOT modify this function */
 int
 main(int argc, char *argv[]) {
 	char line[LINE_LEN+1];		/* to hold the input line */
@@ -99,6 +115,7 @@ main(int argc, char *argv[]) {
 	/* all done; take some rest */
 	return 0;
 }
+
 /* read a line of input into the array passed as argument */
 void
 read_line(char *line, int max_len) {
@@ -137,86 +154,48 @@ void echo(huge_t vars[], int lens[], int opr1_index) {
 void
 init(huge_t vars[], int lens[]) {
 	int i;
-	for (i=0; i<NUM_VARS; i++){
-		lens[i] = 1;
-		vars[i][0] = 0;
+	for(i=0; i<NUM_VARS; i++) {
+		set_huge_to_zero(&vars[i], &lens[i]);
 	}
 }
 
 /* process the '=' operator */
 void
 assign(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
-	if (opr2_str[0] == 'n'){
-		int i;
-		int opr2_index = opr2_str[1] - CH_ZERO;
-		lens[opr1_index] = lens[opr2_index];
+	/*checks if input after operator is 'n' or numbers*/
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
+
+		/*set to zero and add desired value*/
+		set_huge_to_zero(&vars[opr1_index], &lens[opr1_index]);
 		
-		for (i = lens[opr1_index]-1; i >= 0; i--) {
-			
-			vars[opr1_index][i] =  vars[opr2_index][i];
-		}
-	} else if(opr2_str[0] >= '0' && opr2_str[0] <= '9'){	
-		lens[opr1_index] = get_opr2_len(opr2_str);
-		set_huge_to_str(&vars[opr1_index], opr2_str);
-		/*
-		int i;			
-		for (i = lens[opr1_index]-1; i >= 0; i--) {
-			vars[opr1_index][i] = opr2_str[(lens[opr1_index]-1)-i] - CH_ZERO;
-		*/
-	} else {
-		;/*Algorithms are fun!*/
+		add_huges(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
+		          lens[opr2_index]);
 	}
+	else{
+		set_huge_from_str(&vars[opr1_index], opr2_str, &lens[opr1_index]);
+	}
+
 }
 
+	
 /* process the '+' operator */
 void 
 add(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
-	int *left_val = vars[opr1_index];
-	int left_len = lens[opr1_index];
-	int *right_val;
-	int right_len;
-	huge_t temp;
-	if(opr2_str[0] == 'n'){
-		right_val = vars[opr2_str[1] - CH_ZERO];
-		right_len = lens[opr2_str[1] - CH_ZERO];
-	}
-	else {
-		right_len = get_opr2_len(opr2_str);
-		set_huge_to_str(&temp, opr2_str);
-		printf("temp = %d", temp[0]);
-		right_val = temp;
-
-	}
-	printf("l:%d, r:%d", left_len, right_len);
-	int i;
-	int left_dig = 0, right_dig =0, carry = 0, sum_dig= 0;
-	int calc_limit = get_bigger(left_len, right_len);
-	for(i = 0; i<calc_limit+1 && i<INT_SIZE;i++){  /*INT_SIZE to prevent overflow*/
-		if (i < left_len){
-			left_dig = left_val[i];
-		} else if (i!=calc_limit || carry == 1){
-			left_dig = 0;
-			lens[opr1_index] += 1;
-			printf("incrementing length of left");
-		} else{
-			printf("do nothing as expected");
-		}
-		if (i < right_len){
-			right_dig = right_val[i];
-		} else {
-			right_dig = 0;
-		}
-		sum_dig = left_dig + right_dig + carry;
-		printf("summing %d and %d and %d (c) to get %d\n", 
-			   left_dig, right_dig, carry, sum_dig);
-		left_val[i] = sum_dig % 10;
-		if (sum_dig >= 10){
-			carry = 1;
-		} else {
-			carry = 0;
-		}
-
+	if (is_var(opr2_str)) {
 		
+		int opr2_index = get_opr2_index(opr2_str); 
+
+		add_huges(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
+		          lens[opr2_index]);
+	}
+	else{
+		huge_t to_add;
+		int huge_len; 
+		set_huge_from_str(&to_add, opr2_str, &huge_len);
+		
+		add_huges(&vars[opr1_index], &lens[opr1_index], &to_add,
+		          huge_len);
 	
 	}
 }
@@ -224,52 +203,322 @@ add(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
 /* process the '*' operator */
 void 
 multiply(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
+			
+		mult_huge(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
+		          lens[opr2_index]);
 
+	
+	}
+	else{
+		huge_t to_add;
+		int huge_len; 
+		set_huge_from_str(&to_add, opr2_str, &huge_len);
+		
+		mult_huge(&vars[opr1_index], &lens[opr1_index], &to_add,
+		          huge_len);
+	}
+
+	
 }
+
 
 /* process the '^' operator */
 void 
 power(huge_t vars[], int lens[], int opr1_index, char *opr2_str) {
+	if (is_var(opr2_str)) {
+		int opr2_index = get_opr2_index(opr2_str); 
+			
+		power_huge(&vars[opr1_index], &lens[opr1_index], &vars[opr2_index],
+		          lens[opr2_index]);
 
+	}
+	else{
+		huge_t exp;
+		int exp_len; 
+		set_huge_from_str(&exp, opr2_str, &exp_len);
+		
+		power_huge(&vars[opr1_index], &lens[opr1_index], &exp, exp_len);
+	}
+
+	
 }
 
-int get_bigger(int a, int b){
-	if (a >= b){
-		return a;
-	}
-	else {
-		return b;
-	}
-
+/*Function: set_huge_to_zero
+*---------------------------
+*sets a huge to zero and its length to one
+*
+*   target: pointer of huge_t array
+*   target_len: pointer to length of target
+*/
+void set_huge_to_zero(huge_t *target, int *target_len) {
+	*target_len = 1;
+		
+	(*target)[0]=0;
 }
-int get_opr2_len(char *opr2_str){
-	int i =0;
-	while (opr2_str[i] != 0){ 
+
+/*
+*Function: set_huge_from_str
+*-------------------------
+*set huge to given str
+*
+*   huge: pointer of to huge_t array
+*   opr2_str: user input string for characters proceeding and including first
+*   operator
+*	length: pointer to length of huge_t 
+*
+*/
+void
+set_huge_from_str(huge_t *huge, char *opr2_str, int *length) {
+	int i=0;
+	while (opr2_str[i]) {
 		i++;
 	}
-	return i;
+	*length = i;
+	/*assigns huge in reverse*/
+	int j = 0;
+	for (j=(*length) - 1; j>=0; j--) {
+		(*huge)[j] = (opr2_str[((*length)-1) -j] - CH_ZERO);
+	}
+	
+}
+/*
+*Function: get_opr2_index
+*gives number of the 2nd variable referred to by user
+*
+*   opr2_str: user input char string after operator
+*/
+int
+get_opr2_index(char *opr2_str) {
+	int result = opr2_str[1] - CH_ZERO;  
+
+	return result;
+
 }
 
-void set_huge_to_str(huge_t *huge, char *opr2_str){
-	int length = get_opr2_len(opr2_str);
+/*
+*Function: is_var
+*checks if first character after operator is an 'n' and returns true if it is
+*/
+int 
+is_var(char *opr2_str) {
+	return opr2_str[VAR_POS] == VAR_CHAR;
+
+}
+/*
+*Function: add_huges
+*-------------------
+*sets target huge to huge+source
+*
+*
+*   target: pointer of huge_t array
+*	target_len: pointer to length of huge_t 
+*   source: pointer of huge_t array to be added to target
+*   source_len: length of source array
+*   
+*   
+*/
+void
+add_huges(huge_t *target, int *target_len, huge_t *source, int source_len) {
+	/*creates copy of source to add to target*/
+	huge_t source_cp;
+	int source_cp_len = source_len; 
+	copy_huge(&source_cp, &source_cp_len, source, source_len);
+	
+	/*repeatedly adds each integer one by one to target*/
 	int i;
-	for (i = length-1; i >= 0; i--) {
-		printf("%d", i);
-		(*huge)[i] = (opr2_str[(length-1)-i] - CH_ZERO);
+	for(i = 0; i<source_len; i++) {
+		add_int_to_digit(target, target_len, i, source_cp[i]);
+	}
+	trim_zeros(target, target_len);
+}
+
+/*
+*Function: add_int_to_digit 
+*--------------------------
+*adds a single value to a huge at target_index's value. Handles carrying
+*but not leading zeros
+*
+*
+*   target: pointer of huge_t array
+*	target_len: pointer to length of huge_t 
+*   target_index: index of digit in huge to add to 
+*   value: value to add to digit
+*/
+
+void
+add_int_to_digit(huge_t *target, int *target_len, int target_index, int value) {
+	if (target_index >= INT_SIZE) {
+		return;
+	}
+	
+	/*expands length if required. sets new digit to 0*/
+	if (*target_len <= target_index) {
+		*target_len += 1;
+		(*target)[target_index] = 0; 	
+	}
+	/*no point doing anything. exit*/
+	if (value == 0) {
+		return;
+	}
+	
+	/*calculates value of current digit and the carry*/	
+	int sum = (*target)[target_index] + value;
+	(*target)[target_index]= sum%10; 
+	int carry = sum/10;
+
+	/*adds the carry to next digit*/
+	add_int_to_digit(target, target_len, target_index+1, carry);
+	/*Recursion! Algorithms are fun!*/
+	
+}
+
+/*
+*Function: trim_zeros
+*Shortens length of huge to omit leading zeros
+*
+*   target: pointer of huge_t array
+*	target_len: pointer to length of huge_t 
+*/
+void trim_zeros(huge_t *target, int *target_len) {
+	int i =(*target_len)-1;
+	while ((*target)[i] == 0 && i > 0) {
+		i--;
+	}
+	(*target_len) = i + 1;
+}	
+
+
+/*
+*Function huges_equal
+*-------------------
+*checks if huge a and b are equal
+*   a: pointer of huge_t
+*	a_len: length of a	
+*   b: pointer of huge_t
+*	b_len: length of b	
+*
+* returns: either 1 or 0 if true or not
+*/
+
+int huges_equal(huge_t *a, int a_len, huge_t *b, int b_len) {
+	if(a_len != b_len) {
+		return 0;
+	}
+	
+	int i;
+	for(i=0;i<a_len;i++) {
+		if ((*a)[i] != (*b)[i]) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+
+/*
+*Function: copy_huge
+*-------------------
+*sets target huge to value of source huge
+*
+*   target: huge_t array to be changed
+*	target_len: pointer to length of huge_t 
+*   source: pointer of huge_t array to be added to target
+*   source_len: length of source array
+*	
+*/
+void copy_huge(huge_t *target, int *target_len, huge_t *source, 
+               int source_len) {
+
+	(*target_len) = source_len;
+
+	int i;
+	for (i=0;i<source_len;i++) {
+		(*target)[i] = (*source)[i];
 	}
 }
 
 /*
-function add_return_carry
-takes in memory address of digit t and adds factor to it
-sets location of carry to carry
+*Function: mult_huge
+*-------------------
+*changes mult to mult x source with correct formatting 
+*
+*   target: pointer of huge_t array
+*	target_len: pointer to length of huge_t 
+*   source: pointer of huge_t array to be added to target
+*   source_len: length of source array
+*   
 */
-void add_return_carry(digit_t *digit, int factor, int *carry){
-	int sum = *digit + factor;
-	*digit = sum%10;
-	*carry = sum/10;
+void mult_huge(huge_t *target, int *target_len, huge_t *source, 
+               int source_len) {
+	/*initialises huge to store result and sets it to 0*/
+	huge_t result;
+	int result_len=0;
+	set_huge_to_zero(&result, &result_len);
+	
+	/*uses school multiplication algorithm*/
+	int i, j;
+	for (i=0; i<*target_len;i++) {
+		for (j=0; j<source_len;j++) {
+			
+			int product = (*target)[i] * (*source)[j];
+			add_int_to_digit(&result, &result_len, i+j, product);
+		}
+	}
+	/*finally assigns target value and removes leading zeros*/	
+	copy_huge(target, target_len, &result, result_len);
+	trim_zeros(target, target_len);
 }
 
-void trim_huge(huge_t huge, int len){
-	printf("trim boi");
+/*
+*Function: power_huge
+*-------------------
+*sets target to target^exp with correct formatting
+*
+*   target: pointer of huge_t array
+*	target_len: pointer to length of huge_t 
+*   exp: pointer of huge_t array to be added to target
+*   exp_len: length of source array
+*/
+
+void power_huge(huge_t *target, int *target_len, huge_t *exp, int exp_len) {
+	/*declares huge interators and sets to correct value*/	
+	huge_t huge_i; 
+	int huge_i_len=0;
+	set_huge_to_zero(&huge_i, &huge_i_len);
+	
+	/*initialises result huge_t to store result and sets to 1*/
+	huge_t result;
+	int result_len;
+	set_huge_to_zero(&result, &result_len);
+	inc_huge(&result, &result_len);
+
+	/*repeatedly multiplies result by target until huges_equal evals to true*/
+	while(!(huges_equal(&huge_i, huge_i_len, exp, exp_len))) {
+		mult_huge(&result, &result_len, target, *target_len);
+		inc_huge(&huge_i, &huge_i_len);
+	}
+	
+		
+	copy_huge(target, target_len, &result, result_len);	
+	trim_zeros(target, target_len);
+}
+
+/*
+*Function: inc_huge
+*-------------------
+*adds 1 to huge 
+*
+*   target: pointer of huge_t array
+*	target_len: pointer to length of huge_t 
+*   
+*/
+	
+void inc_huge(huge_t *target, int *target_len) {
+	
+	add_int_to_digit(target, target_len, 0,1);
+	trim_zeros(target, target_len); 
+
 }
